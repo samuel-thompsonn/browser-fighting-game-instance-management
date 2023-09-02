@@ -45,6 +45,26 @@ Resources:
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref DynamoTable
+  GetAllLobbiesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/get_all_lobbies/
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref DynamoTable
+      Events:
+        GetAllLobbies:
+          Type: Api
+          Properties:
+            Path: /get_all_lobbies
+            Method: get
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref DynamoTable
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -59,6 +79,12 @@ Outputs:
   HelloWorldFunctionIamRole:
     Description: "Implicit IAM Role created for Hello World function"
     Value: !GetAtt HelloWorldFunctionRole.Arn
+  GetAllLobbiesFunction:
+    Description: "GetAllLobbies endpoint Lambda ARN"
+    Value: !GetAtt GetAllLobbiesFunction.Arn
+  GetAllLobbiesFunctionIamRole:
+    Description: "Implicit IAM Role created for GetAllLobbies function"
+    Value: !GetAtt GetAllLobbiesFunctionRole.Arn
   DyamoDBTable:
     Description: "DynamoDB table created for Lambda access"
     Value: !Ref DynamoTable

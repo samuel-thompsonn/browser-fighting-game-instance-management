@@ -9,6 +9,12 @@ To validate AWS credentials through SSO:
 aws sso login
 ```
 
+Then deploy:
+```
+sam build
+sam deploy
+```
+
 ## AWS's notes
 
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
