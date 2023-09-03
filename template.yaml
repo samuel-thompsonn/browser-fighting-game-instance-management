@@ -13,6 +13,17 @@ Globals:
     MemorySize: 128
 
 Resources:
+
+  LobbyManagementApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Domain:
+        DomainName: sam-thompson-test-development.link
+        CertificateArn: arn:aws:acm:us-east-1:207922868512:certificate/a0cc1bdf-37fb-4f1b-bc02-48fa27503363
+        Route53:
+          HostedZoneId: Z01017512NE3I4SHEOPOV
+
   DynamoTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -42,6 +53,7 @@ Resources:
           Properties:
             Path: /hello
             Method: get
+            RestApiId: !Ref LobbyManagementApi
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref DynamoTable
@@ -62,6 +74,7 @@ Resources:
           Properties:
             Path: /get_all_lobbies
             Method: get
+            RestApiId: !Ref LobbyManagementApi
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref DynamoTable
@@ -72,7 +85,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   HelloWorldApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+    Value: !Sub "https://${LobbyManagementApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
   HelloWorldFunction:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt HelloWorldFunction.Arn
