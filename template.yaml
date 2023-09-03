@@ -76,7 +76,7 @@ Resources:
             Method: get
             RestApiId: !Ref LobbyManagementApi
       Policies:
-        - DynamoDBWritePolicy:
+        - DynamoDBReadPolicy:
             TableName: !Ref LobbyTable
 
 Outputs:
