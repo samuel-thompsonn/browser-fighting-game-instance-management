@@ -79,6 +79,28 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref LobbyTable
 
+  CreateLobbyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/create_lobby
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref LobbyTable
+      Events:
+        CreateLobby:
+          Type: Api
+          Properties:
+            Path: /create_lobby
+            Method: post
+            RestApiId: !Ref LobbyManagementApi
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref LobbyTable
+
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
