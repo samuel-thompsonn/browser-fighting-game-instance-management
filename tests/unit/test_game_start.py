@@ -30,7 +30,6 @@ def apigw_event():
     """ Generates API GW Event"""
 
     return {
-        "lobbyId": "lobbyId",
         "body": '{ "lobbyId": "lobbyId"}',
         "resource": "/{proxy+}",
         "requestContext": {
@@ -83,7 +82,7 @@ def apigw_event():
     }
 
 @moto.mock_aws
-def test_lambda_handler(apigw_event):
+def test_game_start_returns_unused_ip(apigw_event):
     mock_ip = 'example ip address'
     table_name = os.getenv("TABLE_NAME")
     dynamodb = boto3.resource("dynamodb")

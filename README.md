@@ -129,7 +129,8 @@ browser-fighting-game-lobby-management$ pip install -r tests/requirements.txt --
 browser-fighting-game-lobby-management$ python -m pytest tests/unit -v
 # integration test, requiring deploying the stack first.
 # Create the env variable AWS_SAM_STACK_NAME with the name of the stack we are testing
-browser-fighting-game-lobby-management$ AWS_SAM_STACK_NAME="browser-fighting-game-lobby-management" python -m pytest tests/integration -v
+# Do so by editing pytest.ini
+browser-fighting-game-lobby-management$ python -m pytest tests/integration -v
 ```
 
 ## Cleanup

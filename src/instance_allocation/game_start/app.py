@@ -58,7 +58,7 @@ def lambda_handler(event, context):
     table_name = os.getenv('TABLE_NAME')
     if table_name is None:
         raise RuntimeError("No target DDB table found!")
-    lobby_id = event.get('lobbyId')
+    lobby_id = json.loads(event.get('body')).get('lobbyId')
     if lobby_id is None:
         raise ValueError("No lobby id specified!")
 

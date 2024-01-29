@@ -62,7 +62,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   InstanceAllocationApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${InstanceAllocationApi}.execute-api.${AWS::Region}.amazonaws.com/instance_allocation/game_start"
+    Value: !Sub "https://${InstanceAllocationApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/instance_allocation/game_start"
   GameStartFunction:
     Description: "GameStart Lambda Function ARN"
     Value: !GetAtt GameStartFunction.Arn
