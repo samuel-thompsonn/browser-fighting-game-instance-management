@@ -1,10 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  browser-fighting-game-lobby-management
+  browser-fighting-game-instance-management
 
-  SAM template for lobby management API, used in the browser
-  fighting game to create, modify, and list available lobbies.
+  SAM template for instance management APIs, used in the browser
+  fighting game to assign game instances to lobbies for hosting
+  the game arena.
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -13,18 +14,8 @@ Globals:
     MemorySize: 128
 
 Resources:
-
-  LobbyManagementApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Prod
-      Domain:
-        DomainName: sam-thompson-test-development.link
-        CertificateArn: arn:aws:acm:us-east-1:207922868512:certificate/a0cc1bdf-37fb-4f1b-bc02-48fa27503363
-        Route53:
-          HostedZoneId: Z01017512NE3I4SHEOPOV
-
-  LobbyTable:
+### Game instance table ###
+  InstanceTable:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
@@ -36,90 +27,48 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+### Instance allocation API ###
+  InstanceAllocationApi:
+    Type: AWS::Serverless::Api
     Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
-      Runtime: python3.10
-      Architectures:
-        - x86_64
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref LobbyTable
-      Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /hello
-            Method: get
-            RestApiId: !Ref LobbyManagementApi
-      Policies:
-        - DynamoDBWritePolicy:
-            TableName: !Ref LobbyTable
-  GetAllLobbiesFunction:
+      StageName: Prod
+  GameStartFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/get_all_lobbies/
+      CodeUri: src/instance_allocation/game_start
       Handler: app.lambda_handler
       Runtime: python3.10
       Architectures:
         - x86_64
       Environment:
         Variables:
-          TABLE_NAME: !Ref LobbyTable
+          TABLE_NAME: !Ref InstanceTable
       Events:
-        GetAllLobbies:
+        GameStart:
           Type: Api
           Properties:
-            Path: /get_all_lobbies
-            Method: get
-            RestApiId: !Ref LobbyManagementApi
+            Path: /instance_allocation/game_start
+            Method: post
+            RestApiId: !Ref InstanceAllocationApi
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref LobbyTable
-
-  CreateLobbyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/create_lobby
-      Handler: app.lambda_handler
-      Runtime: python3.10
-      Architectures:
-        - x86_64
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref LobbyTable
-      Events:
-        CreateLobby:
-          Type: Api
-          Properties:
-            Path: /create_lobby
-            Method: post
-            RestApiId: !Ref LobbyManagementApi
-      Policies:
+            TableName: !Ref InstanceTable
         - DynamoDBWritePolicy:
-            TableName: !Ref LobbyTable
-
+            TableName: !Ref InstanceTable
+### Game instance internal API ###
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
+  InstanceAllocationApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${LobbyManagementApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
-  GetAllLobbiesFunction:
-    Description: "GetAllLobbies endpoint Lambda ARN"
-    Value: !GetAtt GetAllLobbiesFunction.Arn
-  GetAllLobbiesFunctionIamRole:
-    Description: "Implicit IAM Role created for GetAllLobbies function"
-    Value: !GetAtt GetAllLobbiesFunctionRole.Arn
-  DyamoDBTable:
-    Description: "DynamoDB table created for Lambda access"
-    Value: !Ref LobbyTable
+    Value: !Sub "https://${InstanceAllocationApi}.execute-api.${AWS::Region}.amazonaws.com/instance_allocation/game_start"
+  GameStartFunction:
+    Description: "GameStart Lambda Function ARN"
+    Value: !GetAtt GameStartFunction.Arn
+  GameStartFunctionIAMRole:
+    Description: "Implicit IAM Role created for GameStart function"
+    Value: !GetAtt GameStartFunction.Arn
+  InstanceTable:
+    Description: "DynamoDB table created for tracking available game instances"
+    Value: !Ref InstanceTable

@@ -1,38 +1,37 @@
 import json
 import os
 import boto3
+from boto3.dynamodb.conditions import Attr
 import uuid
 
-def create_lobby(table_name, name, max_player_count):
+def allocate_instance(lobby_id, table_name):
     """
     Parameters
     ----------
+    lobby_id: string, required
+        ID of the lobby to which we must assign an instance
     table_name: string, required
         Name of the DynamoDB table used as the data store for lobbies
         
-    name: string, required
-        Name of the lobby
-        
-    maxPlayerCount: number, required
-        Maximum player capacity of the lobby
-
     Returns
     -------
-    string lobbyID, used to reference the newly created lobby
+    instance_ip: IP of the instance, where players will connect in order
+    to play a round of the game.
     """
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table(table_name)
-    lobby_id = str(uuid.uuid4())
-    table.put_item(
-        Item={
-            'id': lobby_id,
-            'name': name,
-            'status': 'Waiting for players',
-            'playerCount': 0,
-            'maxPlayerCount': max_player_count
-        }
+    scan_response = table.scan(
+        FilterExpression=Attr('lobbyId').eq(None)
     )
-    return lobby_id
+    if (scan_response['Count'] == 0):
+        raise RuntimeError('No available instances')
+    selected_instance = scan_response['Items'][0]
+    table.update_item(
+        Key={ 'id': selected_instance['id'] },
+        UpdateExpression="set lobbyId = :lobby",
+        ExpressionAttributeValues={ ':lobby': lobby_id },
+    )
+    return selected_instance['ip']
 
 
 def lambda_handler(event, context):
@@ -40,7 +39,7 @@ def lambda_handler(event, context):
     Parameters
     ----------
     event: dict, required
-        API Gateway Lambda Proxy Input Format. Required fields: name, string; maxPlayerCount, number
+        API Gateway Lambda Proxy Input Format. Required fields: lobbyId
 
         Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
 
@@ -59,18 +58,16 @@ def lambda_handler(event, context):
     table_name = os.getenv('TABLE_NAME')
     if table_name is None:
         raise RuntimeError("No target DDB table found!")
-    max_player_count = int(event.get('maxPlayerCount'))
-    lobby_name = event.get('name')
-    if lobby_name is None:
-        raise ValueError("No lobby name specified!")
-    
-    lobby_id = create_lobby(table_name, lobby_name, max_player_count)
+    lobby_id = event.get('lobbyId')
+    if lobby_id is None:
+        raise ValueError("No lobby id specified!")
 
+    ip = allocate_instance(lobby_id, table_name)
     return {
         "statusCode": 200,
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "*"
         },
-        "body": json.dumps({ 'lobbyID': lobby_id }, default=str),
+        "body": json.dumps({ 'ip': ip }, default=str),
     }
