@@ -1,16 +1,37 @@
 import json
-
 import pytest
+import moto
+import os
+import boto3
 
-from hello_world import app
+from src.instance_allocation.game_start import app
 
+@pytest.fixture()
+def mocked_dynamo_db():
+    """Generates mock DynamoDB instance"""
+    table_name = os.getenv("TABLE_NAME")
+    with moto.mock_dynamodb():
+        dynamodb = boto3.client("dynamodb")
+        dynamodb.create_table(
+            TableName = table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            BillingMode='PAY_PER_REQUEST'
+        )
+        table = dynamodb.Table(table_name)
+        table.put_item(
+            Item={
+                'id': 'example_id',
+            }
+        )
 
 @pytest.fixture()
 def apigw_event():
     """ Generates API GW Event"""
 
     return {
-        "body": '{ "test": "body"}',
+        "lobbyId": "lobbyId",
+        "body": '{ "lobbyId": "lobbyId"}',
         "resource": "/{proxy+}",
         "requestContext": {
             "resourceId": "123456",
@@ -61,12 +82,29 @@ def apigw_event():
         "path": "/examplepath",
     }
 
-
+@moto.mock_aws
 def test_lambda_handler(apigw_event):
+    mock_ip = 'example ip address'
+    table_name = os.getenv("TABLE_NAME")
+    dynamodb = boto3.resource("dynamodb")
+    dynamodb.create_table(
+        TableName = table_name,
+        KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+        BillingMode='PAY_PER_REQUEST'
+    )
+    table = dynamodb.Table(table_name)
+    table.put_item(
+        Item={
+            'id': 'id',
+            'lobbyId': None,
+            'ip': mock_ip
+        }
+    )
 
     ret = app.lambda_handler(apigw_event, "")
     data = json.loads(ret["body"])
 
     assert ret["statusCode"] == 200
-    assert "message" in ret["body"]
-    assert data["message"] == "hello world"
+    assert "ip" in ret["body"]
+    assert data["ip"] == mock_ip
